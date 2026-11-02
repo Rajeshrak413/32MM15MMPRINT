@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fixed Custom Label Generator (32mm x 14mm)</title>
+    <!-- Include html2canvas to convert label preview into a bulletproof print image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* UI Control Panel */
+        .controls {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .controls h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1e293b;
+            margin: 15px 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .border-config {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .line-config-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .line-config-box h4 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: #475569;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #64748b;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #334155;
+        }
+
+        .btn {
+            background-color: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0284c7;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            padding: 2px 6px;
+            font-size: 10px;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .print-btn {
+            background-color: #22c55e;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .print-btn:hover {
+            background-color: #16a34a;
+        }
+
+        /* Live Preview Container */
+        .preview-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #e2e8f0;
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px dashed #cbd5e1;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        /* Exact proportional screen preview for 32mm x 14mm */
+        .label {
+            width: 320px;
+            height: 140px;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: stretch;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .dynamic-line {
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controls & Inputs -->
+    <div class="controls">
+        <h3>Label Customizer</h3>
+
+        <!-- Border Settings -->
+        <div class="section-title">Label Border Settings</div>
+        <div class="border-config">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Border Style:</label>
+                    <select id="borderStyle" onchange="updateLabelSettings()">
+                        <option value="none">None</option>
+                        <option value="solid" selected>Solid</option>
+                        <option value="dashed">Dashed</option>
+                        <option value="dotted">Dotted</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Thickness (px):</label>
+                    <input type="number" id="borderWidth" value="2" min="0" max="20" oninput="updateLabelSettings()">
+                </div>
+            </div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Padding (px):</label>
+                    <input type="number" id="labelPadding" value="8" min="0" max="30" oninput="updateLabelSettings()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Lines Settings -->
+        <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Text Lines (Infinite)</span>
+            <button class="btn" onclick="addLine()">+ Add Line</button>
+        </div>
+        
+        <div id="linesContainer"></div>
+
+        <button class="print-btn" onclick="printLabelImage()">🖨️ Print Label (32mm x 14mm)</button>
+    </div>
+
+    <!-- Live Preview Box -->
+    <div class="preview-container">
+        <div class="label" id="labelPreview"></div>
+    </div>
+
+    <script>
+        let lines = [
+            { text: "CUSTOM TEXT", size: "22", unit: "px", bold: true, align: "center" },
+            { text: "*ABC-12345*", size: "16", unit: "px", bold: false, align: "center" }
+        ];
+
+        function renderControls() {
+            const container = document.getElementById('linesContainer');
+            container.innerHTML = '';
+
+            lines.forEach((line, index) => {
+                const box = document.createElement('div');
+                box.className = 'line-config-box';
+                box.innerHTML = `
+                    <h4>
+                        Line ${index + 1}
+                        ${lines.length > 1 ? `<button class="btn btn-danger" onclick="removeLine(${index})">Delete</button>` : ''}
+                    </h4>
+                    <div class="input-row">
+                        <div class="input-group" style="flex: 2;">
+                            <label>Text Content:</label>
+                            <input type="text" value="${escapeHtml(line.text)}" oninput="updateLineData(${index}, 'text', this.value)">
+                        </div>
+                        <div class="input-group">
+                            <label>Font Size (px):</label>
+                            <input type="number" value="${line.size}" step="1" min="6" max="100" style="width: 100%;" oninput="updateLineData(${index}, 'size', this.value)">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Alignment:</label>
+                            <select onchange="updateLineData(${index}, 'align', this.value)">
+                                <option value="left" ${line.align === 'left' ? 'selected' : ''}>Left</option>
+                                <option value="center" ${line.align === 'center' ? 'selected' : ''}>Center</option>
+                                <option value="right" ${line.align === 'right' ? 'selected' : ''}>Right</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="display:flex; align-items:flex-end;">
+                            <label class="checkbox-group">
+                                <input type="checkbox" ${line.bold ? 'checked' : ''} onchange="updateLineData(${index}, 'bold', this.checked)"> Bold Text
+                            </label>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+            updateLabelSettings();
+        }
+
+        function updateLabelSettings() {
+            const preview = document.getElementById('labelPreview');
+            const borderStyle = document.getElementById('borderStyle').value;
+            const borderWidth = document.getElementById('borderWidth').value;
+            const labelPadding = document.getElementById('labelPadding').value;
+
+            if (borderStyle === 'none') {
+                preview.style.border = 'none';
+            } else {
+                preview.style.border = `${borderWidth}px ${borderStyle} #000`;
+            }
+            preview.style.padding = `${labelPadding}px`;
+
+            renderPreview();
+        }
+
+        function renderPreview() {
+            const preview = document.getElementById('labelPreview');
+            preview.innerHTML = '';
+
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'dynamic-line';
+                div.style.fontSize = line.size + line.unit;
+                div.style.fontWeight = line.bold ? 'bold' : 'normal';
+                div.style.textAlign = line.align;
+                div.innerText = line.text;
+                preview.appendChild(div);
+            });
+        }
+
+        function addLine() {
+            lines.push({ text: "New Line", size: "16", unit: "px", bold: false, align: "center" });
+            renderControls();
+        }
+
+        function removeLine(index) {
+            lines.splice(index, 1);
+            renderControls();
+        }
+
+        function updateLineData(index, field, value) {
+            lines[index][field] = value;
+            renderPreview();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // Bulletproof print method using canvas rendering
+        function printLabelImage() {
+            const previewElement = document.getElementById('labelPreview');
+            
+            html2canvas(previewElement, { scale: 4 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Print Label</title>
+                            <style>
+                                @page {
+                                    size: 32mm 14mm;
+                                    margin: 0;
+                                }
+                                body {
+                                    margin: 0;
+                                    padding: 0;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    height: 100vh;
+                                }
+                                img {
+                                    width: 32mm;
+                                    height: 14mm;
+                                    object-fit: contain;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <img src="${imgData}" onload="window.print();window.close();" />
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            });
+        }
+
+        renderControls();
+    </script>
+</body>
+</html>
